@@ -1,0 +1,1071 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Food Ordering</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #FF6B35;
+            --secondary: #004E89;
+            --accent: #F7931E;
+            --bg: #F8F9FA;
+            --light: #FFFFFF;
+            --dark: #333333;
+            --success: #4CAF50;
+            --error: #F44336;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg);
+            color: var(--dark);
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+            background: var(--light);
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            height: 60px;
+        }
+
+        .header-title {
+            font-size: 24px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header-info {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            font-size: 14px;
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        select {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 6px;
+            background: white;
+            color: var(--dark);
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        select:hover {
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        }
+
+        .badge {
+            background: var(--accent);
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .main-content {
+            display: flex;
+            margin-top: 60px;
+            width: 100%;
+            gap: 0;
+        }
+
+        .left-panel {
+            flex: 0 0 60%;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid #eee;
+            background: white;
+        }
+
+        .right-panel {
+            flex: 0 0 40%;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg);
+            overflow-y: auto;
+        }
+
+        .chat-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .message {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .message.user {
+            justify-content: flex-end;
+        }
+
+        .message.ai {
+            justify-content: flex-start;
+        }
+
+        .message-bubble {
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 15px;
+            word-wrap: break-word;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.user .message-bubble {
+            background: var(--primary);
+            color: white;
+            border-bottom-right-radius: 3px;
+        }
+
+        .message.ai .message-bubble {
+            background: #E8E8E8;
+            color: var(--dark);
+            border-bottom-left-radius: 3px;
+        }
+
+        .typing-indicator {
+            display: flex;
+            gap: 4px;
+            padding: 12px 16px;
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #999;
+            animation: bounce 1.4s infinite;
+        }
+
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes bounce {
+            0%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-10px); }
+        }
+
+        .input-area {
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #eee;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .input-group {
+            flex: 1;
+            display: flex;
+            gap: 10px;
+            min-width: 300px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 25px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 25px;
+            font-size: 14px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-send {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-send:hover {
+            background: #e55a2b;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+        }
+
+        .quick-btn {
+            background: var(--secondary);
+            color: white;
+            padding: 8px 15px;
+            font-size: 12px;
+        }
+
+        .quick-btn:hover {
+            background: #003a6b;
+        }
+
+        .quick-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .recommendations-header {
+            padding: 15px 20px;
+            background: white;
+            border-bottom: 1px solid #eee;
+            font-size: 16px;
+            font-weight: bold;
+            color: var(--dark);
+        }
+
+        .recommendations-grid {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+        }
+
+        .item-card {
+            background: white;
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+
+        .item-card:hover {
+            box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+            transform: translateY(-2px);
+        }
+
+        .item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 8px;
+        }
+
+        .item-name {
+            font-weight: bold;
+            font-size: 14px;
+            color: var(--dark);
+        }
+
+        .rl-badge {
+            background: linear-gradient(135deg, var(--accent), #FF8C42);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .item-meta {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .item-price {
+            font-size: 16px;
+            font-weight: bold;
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+
+        .item-tags {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+
+        .tag {
+            background: #f0f0f0;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            color: #666;
+        }
+
+        .item-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .quantity-selector {
+            display: flex;
+            align-items: center;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: white;
+        }
+
+        .qty-btn {
+            width: 28px;
+            height: 28px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 16px;
+            padding: 0;
+        }
+
+        .qty-btn:hover {
+            background: #f0f0f0;
+        }
+
+        .qty-display {
+            width: 30px;
+            text-align: center;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .btn-add {
+            flex: 1;
+            background: var(--primary);
+            color: white;
+            padding: 8px 12px;
+            font-size: 12px;
+        }
+
+        .btn-add:hover {
+            background: #e55a2b;
+        }
+
+        .cart-drawer {
+            position: fixed;
+            right: -400px;
+            top: 60px;
+            width: 400px;
+            height: calc(100vh - 60px);
+            background: white;
+            box-shadow: -2px 0 10px rgba(0,0,0,0.2);
+            transition: right 0.3s ease;
+            z-index: 99;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .cart-drawer.open {
+            right: 0;
+        }
+
+        .cart-header {
+            padding: 20px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .cart-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 0;
+        }
+
+        .cart-items {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+        }
+
+        .cart-item {
+            background: #f9f9f9;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .cart-item-info {
+            flex: 1;
+            font-size: 14px;
+        }
+
+        .cart-item-name {
+            font-weight: bold;
+            color: var(--dark);
+        }
+
+        .cart-item-price {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .btn-remove {
+            background: var(--error);
+            color: white;
+            padding: 5px 10px;
+            font-size: 12px;
+        }
+
+        .btn-remove:hover {
+            background: #d32f2f;
+        }
+
+        .cart-summary {
+            padding: 15px 20px;
+            border-top: 1px solid #eee;
+            background: #fafafa;
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .summary-row.total {
+            font-weight: bold;
+            font-size: 16px;
+            color: var(--primary);
+            border-top: 1px solid #ddd;
+            padding-top: 10px;
+        }
+
+        .min-order {
+            font-size: 12px;
+            color: #666;
+            margin-top: 10px;
+        }
+
+        .min-order-bar {
+            width: 100%;
+            height: 6px;
+            background: #e0e0e0;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+
+        .min-order-fill {
+            height: 100%;
+            background: var(--success);
+            transition: width 0.3s ease;
+        }
+
+        .btn-checkout {
+            width: 100%;
+            background: var(--primary);
+            color: white;
+            padding: 12px;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        .btn-checkout:hover:not(:disabled) {
+            background: #e55a2b;
+        }
+
+        .btn-checkout:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 200;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            max-width: 500px;
+            width: 90%;
+            animation: modalPop 0.3s ease-out;
+        }
+
+        @keyframes modalPop {
+            from {
+                transform: scale(0.9);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .modal-header {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--success);
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-body {
+            font-size: 14px;
+            line-height: 1.8;
+            color: var(--dark);
+        }
+
+        .modal-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        .modal-label {
+            font-weight: 600;
+        }
+
+        .modal-value {
+            color: var(--primary);
+            font-weight: bold;
+        }
+
+        .modal-footer {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .btn-new-order {
+            background: var(--primary);
+            color: white;
+            padding: 12px 30px;
+        }
+
+        .btn-new-order:hover {
+            background: #e55a2b;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--success);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            animation: slideInUp 0.3s ease-out;
+            z-index: 300;
+        }
+
+        .toast.error {
+            background: var(--error);
+        }
+
+        @keyframes slideInUp {
+            from {
+                transform: translateY(100px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                flex-direction: column;
+            }
+
+            .left-panel,
+            .right-panel {
+                flex: none;
+            }
+
+            .right-panel {
+                display: none;
+            }
+
+            .message-bubble {
+                max-width: 85%;
+            }
+
+            .cart-drawer {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-title">🤖 AI Food Ordering</div>
+        <div class="header-info">
+            <div class="header-controls">
+                <label for="user-select" style="margin-right: 5px;">User:</label>
+                <select id="user-select" onchange="changeUser()">
+                    <option value="1">User 1</option>
+                    <option value="2">User 2</option>
+                    <option value="3" selected>User 3 (Amit)</option>
+                    <option value="4">User 4</option>
+                    <option value="5">User 5</option>
+                    <option value="6">User 6</option>
+                    <option value="7">User 7</option>
+                    <option value="8">User 8</option>
+                    <option value="9">User 9</option>
+                    <option value="10">User 10</option>
+                </select>
+            </div>
+            <div class="header-controls">
+                <label for="orchestrator-select" style="margin-right: 5px;">Orchestrator:</label>
+                <select id="orchestrator-select" onchange="changeOrchestrator()">
+                    <option value="langchain" selected>LangChain</option>
+                    <option value="gemini">Gemini</option>
+                </select>
+            </div>
+            <div id="user-info">User: <span id="user-name">Loading...</span></div>
+            <button class="quick-btn" onclick="toggleCart()">🛒 Cart (<span id="cart-count">0</span>)</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="left-panel">
+            <div class="chat-area" id="chat-area"></div>
+            <div class="input-area">
+                <div class="input-group">
+                    <input type="text" id="user-input" placeholder="Ask for food..." onkeypress="handleKeyPress(event)">
+                    <button class="btn-send" onclick="sendMessage()">Send</button>
+                </div>
+                <div style="width: 100%; display: flex; gap: 8px;">
+                    <button class="quick-btn" onclick="quickAction('show')">Show Menu</button>
+                    <button class="quick-btn" onclick="quickAction('cart')">View Cart</button>
+                    <button class="quick-btn" id="checkout-btn" onclick="handleCheckout()" disabled>Checkout</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="right-panel">
+            <div class="recommendations-header">Recommendations</div>
+            <div class="recommendations-grid" id="recommendations-grid"></div>
+        </div>
+    </div>
+
+    <div class="cart-drawer" id="cart-drawer">
+        <div class="cart-header">
+            <div>🛒 Your Cart</div>
+            <button class="cart-close" onclick="toggleCart()">✕</button>
+        </div>
+        <div class="cart-items" id="cart-items-list"></div>
+        <div class="cart-summary">
+            <div class="summary-row">
+                <span>Subtotal:</span>
+                <span id="subtotal">₹0</span>
+            </div>
+            <div class="summary-row">
+                <span>Delivery Fee:</span>
+                <span id="delivery-fee">₹0</span>
+            </div>
+            <div class="summary-row total">
+                <span>Total:</span>
+                <span id="cart-total">₹0</span>
+            </div>
+            <div class="min-order">
+                <div>Minimum Order: <span id="min-order-amt">₹0</span></div>
+                <div class="min-order-bar">
+                    <div class="min-order-fill" id="min-order-fill" style="width: 0%"></div>
+                </div>
+            </div>
+            <button class="btn-checkout" id="checkout-drawer-btn" onclick="handleCheckout()" disabled>Checkout</button>
+        </div>
+    </div>
+
+    <div class="modal" id="order-modal">
+        <div class="modal-content">
+            <div class="modal-header">✓ Order Placed!</div>
+            <div class="modal-body">
+                <div class="modal-row">
+                    <span class="modal-label">Order ID:</span>
+                    <span class="modal-value" id="order-id">-</span>
+                </div>
+                <div class="modal-row">
+                    <span class="modal-label">Total:</span>
+                    <span class="modal-value" id="order-total">-</span>
+                </div>
+                <div class="modal-row">
+                    <span class="modal-label">Delivery Address:</span>
+                    <span class="modal-value" id="order-address">-</span>
+                </div>
+                <div class="modal-row">
+                    <span class="modal-label">RL Reward:</span>
+                    <span class="modal-value" id="rl-reward">-</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-new-order" onclick="newOrder()">New Order</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const API_BASE = 'http://localhost:5000';
+        let sessionId = null;
+        let currentItems = {};
+        let cartItems = {};
+        let currentUserId = 3;
+        let currentOrchestrator = 'langchain';
+
+        // Change user
+        function changeUser() {
+            const userSelect = document.getElementById('user-select');
+            currentUserId = parseInt(userSelect.value);
+            document.getElementById('chat-area').innerHTML = '';
+            init();
+        }
+
+        // Change orchestrator
+        function changeOrchestrator() {
+            const orchestratorSelect = document.getElementById('orchestrator-select');
+            currentOrchestrator = orchestratorSelect.value;
+            document.getElementById('chat-area').innerHTML = '';
+            init();
+        }
+
+        // Initialize app
+        async function init() {
+            try {
+                const response = await fetch(`${API_BASE}/api/init`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_id: currentUserId,
+                        orchestrator_type: currentOrchestrator
+                    })
+                });
+
+                const data = await response.json();
+                if (data.status === 'success') {
+                    sessionId = data.session_id;
+                    document.getElementById('user-name').textContent = data.user_data.name || 'User ' + currentUserId;
+                    addMessage('ai', data.message);
+                } else {
+                    addMessage('ai', 'Failed to initialize. Check console.');
+                    console.error(data);
+                }
+            } catch (error) {
+                addMessage('ai', 'Connection error. Make sure backend is running on port 5000.');
+                console.error(error);
+            }
+        }
+
+        // Send chat message
+        async function sendMessage() {
+            const input = document.getElementById('user-input');
+            const message = input.value.trim();
+
+            if (!message || !sessionId) return;
+
+            addMessage('user', message);
+            input.value = '';
+            showTypingIndicator();
+
+            try {
+                const response = await fetch(`${API_BASE}/api/chat`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        session_id: sessionId,
+                        message: message
+                    })
+                });
+
+                const data = await response.json();
+                removeTypingIndicator();
+
+                if (data.status === 'success') {
+                    addMessage('ai', data.message);
+                    
+                    if (data.recommendations && data.recommendations.length > 0) {
+                        displayRecommendations(data.recommendations);
+                    }
+                    
+                    if (data.cart) {
+                        updateCartDisplay(data.cart);
+                    }
+                } else {
+                    addMessage('ai', 'Error: ' + (data.message || 'Unknown error'));
+                }
+            } catch (error) {
+                removeTypingIndicator();
+                addMessage('ai', 'Connection error');
+                console.error(error);
+            }
+        }
+
+        // Quick actions
+        function quickAction(action) {
+            if (action === 'show') {
+                sendMessageDirectly('Show me all menu items');
+            } else if (action === 'cart') {
+                toggleCart();
+            }
+        }
+
+        // Handle checkout
+        async function handleCheckout() {
+            if (!sessionId) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/api/checkout`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ session_id: sessionId })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    document.getElementById('order-id').textContent = data.order_id;
+                    document.getElementById('order-total').textContent = '₹' + data.total;
+                    document.getElementById('order-address').textContent = data.delivery_address;
+                    document.getElementById('rl-reward').textContent = data.rl_reward.toFixed(2);
+                    
+                    document.getElementById('order-modal').classList.add('show');
+                    toggleCart();
+                    cartItems = {};
+                    updateCartDisplay({});
+                    showToast('Order placed successfully!');
+                } else {
+                    showToast(data.message || 'Checkout failed', 'error');
+                }
+            } catch (error) {
+                showToast('Error during checkout', 'error');
+                console.error(error);
+            }
+        }
+
+        // UI Functions
+        function addMessage(sender, text) {
+            const chatArea = document.getElementById('chat-area');
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `message ${sender}`;
+            msgDiv.innerHTML = `<div class="message-bubble">${escapeHtml(text)}</div>`;
+            chatArea.appendChild(msgDiv);
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
+
+        function showTypingIndicator() {
+            const chatArea = document.getElementById('chat-area');
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'message ai';
+            typingDiv.id = 'typing-indicator';
+            typingDiv.innerHTML = '<div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>';
+            chatArea.appendChild(typingDiv);
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
+
+        function removeTypingIndicator() {
+            const typing = document.getElementById('typing-indicator');
+            if (typing) typing.remove();
+        }
+
+        function displayRecommendations(items) {
+            const grid = document.getElementById('recommendations-grid');
+            grid.innerHTML = '';
+
+            items.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'item-card';
+                
+                const rlScore = item.rl_score ? item.rl_score.toFixed(2) : '0.00';
+                const tagsHtml = (item.tags || []).map(tag => `<div class="tag">${tag}</div>`).join('');
+                
+                card.innerHTML = `
+                    <div class="item-header">
+                        <div class="item-name">${escapeHtml(item.name)}</div>
+                        ${item.rl_score ? `<div class="rl-badge">RL: ${rlScore}</div>` : ''}
+                    </div>
+                    <div class="item-meta">${escapeHtml(item.restaurant_name)} • ${escapeHtml(item.cuisine_type || '')}</div>
+                    <div class="item-price">₹${item.price}</div>
+                    <div class="item-tags">${tagsHtml}</div>
+                    <div class="item-actions">
+                        <div class="quantity-selector">
+                            <button class="qty-btn" onclick="decreaseQty(${item.item_id})">−</button>
+                            <div class="qty-display" id="qty-${item.item_id}">1</div>
+                            <button class="qty-btn" onclick="increaseQty(${item.item_id})">+</button>
+                        </div>
+                        <button class="btn-add" onclick="addToCart(${item.item_id}, '${item.name}', ${item.price})">Add</button>
+                    </div>
+                `;
+                
+                currentItems[item.item_id] = item;
+                grid.appendChild(card);
+            });
+        }
+
+        function increaseQty(itemId) {
+            const display = document.getElementById(`qty-${itemId}`);
+            display.textContent = parseInt(display.textContent) + 1;
+        }
+
+        function decreaseQty(itemId) {
+            const display = document.getElementById(`qty-${itemId}`);
+            const current = parseInt(display.textContent);
+            if (current > 1) display.textContent = current - 1;
+        }
+
+        function addToCart(itemId, itemName, price) {
+            const qtyDisplay = document.getElementById(`qty-${itemId}`);
+            const qty = parseInt(qtyDisplay.textContent);
+            
+            const message = `add ${qty} ${itemName}`;
+            sendMessageDirectly(message);
+            showToast(`Added ${qty}x ${itemName} to cart`);
+        }
+
+        function toggleCart() {
+            document.getElementById('cart-drawer').classList.toggle('open');
+        }
+
+        function updateCartDisplay(cart) {
+            if (!cart.items) return;
+
+            const itemsList = document.getElementById('cart-items-list');
+            itemsList.innerHTML = '';
+
+            cart.items.forEach((item, idx) => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'cart-item';
+                itemDiv.innerHTML = `
+                    <div class="cart-item-info">
+                        <div class="cart-item-name">${escapeHtml(item.item_name || item.name)}</div>
+                        <div class="cart-item-price">₹${item.unit_price || item.price} × ${item.quantity}</div>
+                    </div>
+                    <button class="btn-remove" onclick="removeFromCart(${idx})">Remove</button>
+                `;
+                itemsList.appendChild(itemDiv);
+            });
+
+            document.getElementById('subtotal').textContent = '₹' + (cart.subtotal || 0).toFixed(2);
+            document.getElementById('delivery-fee').textContent = '₹' + (cart.delivery_fee || 0).toFixed(2);
+            document.getElementById('cart-total').textContent = '₹' + (cart.total || 0).toFixed(2);
+            document.getElementById('min-order-amt').textContent = '₹' + (cart.minimum_order || 0);
+            document.getElementById('cart-count').textContent = cart.items.length;
+
+            const minOrderMet = cart.minimum_order_met || false;
+            const fillPercent = cart.minimum_order ? Math.min((cart.subtotal / cart.minimum_order) * 100, 100) : 0;
+            document.getElementById('min-order-fill').style.width = fillPercent + '%';
+
+            document.getElementById('checkout-btn').disabled = !minOrderMet;
+            document.getElementById('checkout-drawer-btn').disabled = !minOrderMet;
+        }
+
+        function removeFromCart(index) {
+            sendMessageDirectly(`remove item ${index + 1}`);
+            showToast('Item removed from cart');
+        }
+
+        function newOrder() {
+            document.getElementById('order-modal').classList.remove('show');
+            document.getElementById('chat-area').innerHTML = '';
+            init();
+        }
+
+        // Utilities
+        function sendMessageDirectly(message) {
+            document.getElementById('user-input').value = message;
+            sendMessage();
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') sendMessage();
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type === 'error' ? 'error' : ''}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Start app
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>
