@@ -57,7 +57,7 @@ class GeminiOrchestrator:
         self.rl_loop.load_state()
         
         # Configure Gemini
-        api_key = "AIzaSyBQahb5ttzTA9kdMiDqpEGw2swc5_8EaeU"
+        api_key = "YOUR API KEY HERE"  # Replace with your actual API key
         if not api_key:
             raise ValueError("GOOGLE_API_KEY not found")
         
